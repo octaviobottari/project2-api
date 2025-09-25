@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const mongodb = require('./data/database');
 const passport = require('passport');
 const session = require('express-session');
+const MongoStore = require('connect-mongo'); // Nuevo
 const GitHubStrategy = require('passport-github2').Strategy;
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -38,6 +39,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
   saveUninitialized: true,
+  store: MongoStore.create({ // Nuevo: Usa MongoDB para sesiones
+    mongoUrl: process.env.MONGODB_URL,
+    dbName: 'project2db',
+    collectionName: 'sessions'
+  })
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -51,6 +57,7 @@ app.use((req, res, next) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/', require('./routes'));
 
+// Resto del código (sin cambios)
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
