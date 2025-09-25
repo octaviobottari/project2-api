@@ -1,16 +1,52 @@
 const express = require('express');
 const router = express.Router();
-const { body, param, validationResult } = require('express-validator');
+const { check, validationResult } = require('express-validator');
 const usersController = require('../controllers/users');
+
+// Middleware para verificar autenticación
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: 'Unauthorized: Please log in' });
+};
+
+// Validaciones para POST y PUT
+const userValidationRules = [
+  check('name').notEmpty().withMessage('Name is required'),
+  check('email').isEmail().withMessage('Valid email is required'),
+  check('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  check('role').optional().isIn(['user', 'admin']).withMessage('Role must be user or admin')
+];
+
+// Rutas con autenticación
+router.get('/', isAuthenticated, usersController.getAllUsers);
+router.post('/', isAuthenticated, userValidationRules, (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+}, usersController.createUser);
+router.put('/:id', isAuthenticated, userValidationRules, (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+}, usersController.updateUser);
+router.delete('/:id', isAuthenticated, usersController.deleteUser);
 
 /**
  * @swagger
  * /users:
  *   get:
  *     summary: Get all users
+ *     security:
+ *       - OAuth2: []
  *     responses:
  *       200:
- *         description: A list of users
+ *         description: List of users
  *         content:
  *           application/json:
  *             schema:
@@ -18,34 +54,16 @@ const usersController = require('../controllers/users');
  *               items:
  *                 type: object
  *                 properties:
- *                   _id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   email:
- *                     type: string
- *                   role:
- *                     type: string
- *                   githubId:
- *                     type: string
- *                   profilePicture:
- *                     type: string
- *                   provider:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                   updatedAt:
- *                     type: string
- *       500:
- *         description: Server error
- */
-router.get('/', usersController.getAll);
-
-/**
- * @swagger
- * /users:
+ *                   _id: { type: string }
+ *                   name: { type: string }
+ *                   email: { type: string }
+ *                   role: { type: string }
+ *       401:
+ *         description: Unauthorized
  *   post:
  *     summary: Create a new user
+ *     security:
+ *       - OAuth2: []
  *     requestBody:
  *       required: true
  *       content:
@@ -53,40 +71,27 @@ router.get('/', usersController.getAll);
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               role: { type: string, enum: ['user', 'admin'] }
  *     responses:
  *       201:
  *         description: User created
  *       400:
  *         description: Validation error
- *       500:
- *         description: Server error
- */
-router.post('/', [
-  body('name').notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').notEmpty().withMessage('Role is required')
-], usersController.createUser);
-
-/**
- * @swagger
+ *       401:
+ *         description: Unauthorized
  * /users/{id}:
  *   put:
  *     summary: Update a user
+ *     security:
+ *       - OAuth2: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
@@ -94,52 +99,36 @@ router.post('/', [
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               role:
- *                 type: string
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               role: { type: string, enum: ['user', 'admin'] }
  *     responses:
  *       204:
  *         description: User updated
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: User not found
- *       500:
- *         description: Server error
- */
-router.put('/:id', [
-  param('id').isMongoId().withMessage('Invalid ID'),
-  body('name').notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('role').notEmpty().withMessage('Role is required')
-], usersController.updateUser);
-
-/**
- * @swagger
- * /users/{id}:
  *   delete:
  *     summary: Delete a user
+ *     security:
+ *       - OAuth2: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       204:
  *         description: User deleted
  *       400:
- *         description: Validation error
+ *         description: Invalid ID
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: User not found
- *       500:
- *         description: Server error
  */
-router.delete('/:id', [
-  param('id').isMongoId().withMessage('Invalid ID')
-], usersController.deleteUser);
-
 module.exports = router;

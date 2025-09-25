@@ -11,6 +11,7 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware para verificar autenticación
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
@@ -36,7 +37,7 @@ const options = {
         }
       }
     },
-    security: [{ OAuth2: [] }], 
+    security: [{ OAuth2: [] }],
   },
   apis: ['./routes/*.js'],
 };
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
   next();
 });
 
+// Proteger /api-docs
 app.use('/api-docs', isAuthenticated, swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/', require('./routes'));
 
