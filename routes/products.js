@@ -3,6 +3,10 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const productsController = require('../controllers/products');
 
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) return next();
+  res.status(401).json({ error: 'Unauthorized: Please log in' });
+};
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -39,6 +43,8 @@ const validate = (req, res, next) => {
  *                     type: integer
  *                   category:
  *                     type: string
+ *                   sku:
+ *                     type: string
  *                   createdAt:
  *                     type: string
  *                   updatedAt:
@@ -53,6 +59,8 @@ router.get('/', productsController.getAll);
  * /products:
  *   post:
  *     summary: Create a new product
+ *     security:
+ *       - OAuth2: []
  *     requestBody:
  *       required: true
  *       content:
@@ -70,31 +78,34 @@ router.get('/', productsController.getAll);
  *                 type: integer
  *               category:
  *                 type: string
+ *               sku:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Product created
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Unauthorized
  *       500:
  *         description: Server error
  */
-router.post('/',
-  [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('description').notEmpty().withMessage('Description is required'),
-    body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-    body('stock').isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
-    body('category').notEmpty().withMessage('Category is required')
-  ],
-  validate,
-  productsController.createProduct
-);
+router.post('/', isAuthenticated, [
+  body('name').notEmpty().withMessage('Name is required'),
+  body('description').notEmpty().withMessage('Description is required'),
+  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('stock').isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('sku').notEmpty().withMessage('SKU is required')
+], validate, productsController.createProduct);
 
 /**
  * @swagger
  * /products/{id}:
  *   put:
  *     summary: Update a product
+ *     security:
+ *       - OAuth2: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -118,27 +129,29 @@ router.post('/',
  *                 type: integer
  *               category:
  *                 type: string
+ *               sku:
+ *                 type: string
  *     responses:
  *       204:
  *         description: Product updated
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Product not found
  *       500:
  *         description: Server error
  */
-router.put('/:id',
-  [
-    param('id').isMongoId().withMessage('Invalid ID'),
-    body('name').notEmpty().withMessage('Name is required'),
-    body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-    body('stock').isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
-    body('category').notEmpty().withMessage('Category is required')
-  ],
-  validate,
-  productsController.updateProduct
-);
+router.put('/:id', isAuthenticated, [
+  param('id').isMongoId().withMessage('Invalid ID'),
+  body('name').notEmpty().withMessage('Name is required'),
+  body('description').notEmpty().withMessage('Description is required'),
+  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('stock').isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('sku').notEmpty().withMessage('SKU is required')
+], validate, productsController.updateProduct);
 
 /**
  * @swagger
@@ -154,14 +167,15 @@ router.put('/:id',
  *     responses:
  *       204:
  *         description: Product deleted
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Product not found
  *       500:
  *         description: Server error
  */
-router.delete('/:id',
-  [param('id').isMongoId().withMessage('Invalid ID')],
-  productsController.deleteProduct
-);
+router.delete('/:id', [
+  param('id').isMongoId().withMessage('Invalid ID')
+], validate, productsController.deleteProduct);
 
 module.exports = router;

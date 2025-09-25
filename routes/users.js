@@ -26,6 +26,12 @@ const usersController = require('../controllers/users');
  *                     type: string
  *                   role:
  *                     type: string
+ *                   githubId:
+ *                     type: string
+ *                   profilePicture:
+ *                     type: string
+ *                   provider:
+ *                     type: string
  *                   createdAt:
  *                     type: string
  *                   updatedAt:
@@ -63,15 +69,12 @@ router.get('/', usersController.getAll);
  *       500:
  *         description: Server error
  */
-router.post('/',
-  [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').notEmpty().withMessage('Role is required')
-  ],
-  usersController.createUser
-);
+router.post('/', [
+  body('name').notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('role').notEmpty().withMessage('Role is required')
+], usersController.createUser);
 
 /**
  * @swagger
@@ -107,15 +110,12 @@ router.post('/',
  *       500:
  *         description: Server error
  */
-router.put('/:id',
-  [
-    param('id').isMongoId().withMessage('Invalid ID'),
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('role').notEmpty().withMessage('Role is required')
-  ],
-  usersController.updateUser
-);
+router.put('/:id', [
+  param('id').isMongoId().withMessage('Invalid ID'),
+  body('name').notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('role').notEmpty().withMessage('Role is required')
+], usersController.updateUser);
 
 /**
  * @swagger
@@ -131,14 +131,15 @@ router.put('/:id',
  *     responses:
  *       204:
  *         description: User deleted
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: User not found
  *       500:
  *         description: Server error
  */
-router.delete('/:id',
-  [param('id').isMongoId().withMessage('Invalid ID')],
-  usersController.deleteUser
-);
+router.delete('/:id', [
+  param('id').isMongoId().withMessage('Invalid ID')
+], usersController.deleteUser);
 
 module.exports = router;
