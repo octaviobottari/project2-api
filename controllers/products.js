@@ -1,21 +1,19 @@
 const mongodb = require('../data/database');
 const ObjectId = require('mongodb').ObjectId;
-const { validationResult } = require('express-validator');
 
-const getAll = async (req, res) => {
+const getAllProducts = async (req, res) => {
   try {
-    const result = await mongodb.getDatabase().collection('products').find();
-    const products = await result.toArray();
+    const db = mongodb.getDatabase();
+    const products = await db.collection('products').find().toArray();
     res.status(200).json(products);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch products', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch products' });
   }
 };
 
 const createProduct = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
+    const db = mongodb.getDatabase();
     const product = {
       name: req.body.name,
       description: req.body.description,
@@ -26,47 +24,55 @@ const createProduct = async (req, res) => {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    const response = await mongodb.getDatabase().collection('products').insertOne(product);
-    if (response.acknowledged) res.status(201).json(product);
-    else res.status(500).json({ error: 'Failed to create product' });
+    const result = await db.collection('products').insertOne(product);
+    res.status(201).json({ _id: result.insertedId, ...product });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create product', details: err.message });
+    res.status(500).json({ error: 'Failed to create product' });
   }
 };
 
 const updateProduct = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
-    const productId = new ObjectId(req.params.id);
-    const product = {
-      name: req.body.name,
-      description: req.body.description,
-      price: req.body.price,
-      stock: req.body.stock,
-      category: req.body.category,
-      sku: req.body.sku,
-      updatedAt: new Date()
-    };
-    const response = await mongodb.getDatabase().collection('products').replaceOne({ _id: productId }, product);
-    if (response.modifiedCount > 0) res.status(204).send();
-    else res.status(404).json({ error: 'Product not found' });
+    const db = mongodb.getDatabase();
+    const productId = req.params.id;
+    if (!ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    const updateFields = { updatedAt: new Date() };
+    if (req.body.name) updateFields.name = req.body.name;
+    if (req.body.description) updateFields.description = req.body.description;
+    if (req.body.price) updateFields.price = req.body.price;
+    if (req.body.stock) updateFields.stock = req.body.stock;
+    if (req.body.category) updateFields.category = req.body.category;
+    if (req.body.sku) updateFields.sku = req.body.sku;
+    const result = await db.collection('products').updateOne(
+      { _id: new ObjectId(productId) },
+      { $set: updateFields }
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.status(204).send();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update product', details: err.message });
+    res.status(500).json({ error: 'Failed to update product' });
   }
 };
 
 const deleteProduct = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
-    const productId = new ObjectId(req.params.id);
-    const response = await mongodb.getDatabase().collection('products').deleteOne({ _id: productId });
-    if (response.deletedCount > 0) res.status(204).send();
-    else res.status(404).json({ error: 'Product not found' });
+    const db = mongodb.getDatabase();
+    const productId = req.params.id;
+    if (!ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    const result = await db.collection('products').deleteOne({ _id: new ObjectId(productId) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.status(204).send();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete product', details: err.message });
+    res.status(500).json({ error: 'Failed to delete product' });
   }
 };
 
-module.exports = { getAll, createProduct, updateProduct, deleteProduct };
+module.exports = { getAllProducts, createProduct, updateProduct, deleteProduct };

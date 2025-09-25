@@ -1,84 +1,82 @@
 const mongodb = require('../data/database');
-const ObjectId = require('mongodb').ObjectId;
-const { validationResult } = require('express-validator');
 const bcrypt = require('bcrypt');
+const ObjectId = require('mongodb').ObjectId;
 
-const getAll = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
-    const result = await mongodb.getDatabase().collection('users').find({}, { projection: { password: 0 } });
-    const users = await result.toArray();
-    res.status(200).json(users);
+    const db = mongodb.getDatabase();
+    const users = await db.collection('users').find().toArray();
+    res.status(200).json(users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    }));
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch users', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 };
 
 const createUser = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const db = mongodb.getDatabase();
+    const { name, email, password, role } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = {
-      name: req.body.name,
-      email: req.body.email,
+      name,
+      email,
       password: hashedPassword,
-      role: req.body.role,
+      role: role || 'user',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      provider: 'local'
     };
-    const response = await mongodb.getDatabase().collection('users').insertOne(user);
-    if (response.acknowledged) {
-      res.status(201).json(user);
-    } else {
-      res.status(500).json({ error: 'Failed to create user' });
-    }
+    const result = await db.collection('users').insertOne(user);
+    res.status(201).json({ _id: result.insertedId, ...user, password: undefined });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create user', details: err.message });
+    res.status(500).json({ error: 'Failed to create user' });
   }
 };
 
 const updateUser = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
-    const userId = new ObjectId(req.params.id);
-    const user = {
-      name: req.body.name,
-      email: req.body.email,
-      role: req.body.role,
-      updatedAt: new Date()
-    };
-    const response = await mongodb.getDatabase().collection('users').replaceOne({ _id: userId }, user);
-    if (response.modifiedCount > 0) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: 'User not found' });
+    const db = mongodb.getDatabase();
+    const userId = req.params.id;
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
     }
+    const { name, email, password, role } = req.body;
+    const updateFields = { updatedAt: new Date() };
+    if (name) updateFields.name = name;
+    if (email) updateFields.email = email;
+    if (password) updateFields.password = await bcrypt.hash(password, 10);
+    if (role) updateFields.role = role;
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: updateFields }
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(204).send();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update user', details: err.message });
+    res.status(500).json({ error: 'Failed to update user' });
   }
 };
 
 const deleteUser = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
-    const userId = new ObjectId(req.params.id);
-    const response = await mongodb.getDatabase().collection('users').deleteOne({ _id: userId });
-    if (response.deletedCount > 0) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: 'User not found' });
+    const db = mongodb.getDatabase();
+    const userId = req.params.id;
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
     }
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(204).send();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete user', details: err.message });
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 };
 
-module.exports = { getAll, createUser, updateUser, deleteUser };
+module.exports = { getAllUsers, createUser, updateUser, deleteUser };

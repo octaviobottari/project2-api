@@ -3,13 +3,20 @@ const bodyParser = require('body-parser');
 const mongodb = require('./data/database');
 const passport = require('passport');
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // Nuevo
+const MongoStore = require('connect-mongo');
 const GitHubStrategy = require('passport-github2').Strategy;
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
+
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: 'Unauthorized: Please log in' });
+};
 
 const options = {
   definition: {
@@ -28,7 +35,8 @@ const options = {
           }
         }
       }
-    }
+    },
+    security: [{ OAuth2: [] }], 
   },
   apis: ['./routes/*.js'],
 };
@@ -39,7 +47,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
   saveUninitialized: true,
-  store: MongoStore.create({ // Nuevo: Usa MongoDB para sesiones
+  store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URL,
     dbName: 'project2db',
     collectionName: 'sessions'
@@ -54,10 +62,10 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   next();
 });
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+app.use('/api-docs', isAuthenticated, swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/', require('./routes'));
 
-// Resto del código (sin cambios)
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
@@ -88,10 +96,6 @@ async (accessToken, refreshToken, profile, done) => {
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
-
-app.get('/', (req, res) => {
-  res.send(req.isAuthenticated() ? `Logged in as ${req.user.name}` : 'Logged Out');
-});
 
 app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
