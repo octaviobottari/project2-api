@@ -3,7 +3,6 @@ const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const productsController = require('../controllers/products');
 
-// Middleware para verificar autenticación
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
@@ -11,7 +10,6 @@ const isAuthenticated = (req, res, next) => {
   res.status(401).json({ error: 'Unauthorized: Please log in' });
 };
 
-// Validaciones para POST y PUT
 const productValidationRules = [
   check('name').notEmpty().withMessage('Name is required'),
   check('description').notEmpty().withMessage('Description is required'),
@@ -21,7 +19,6 @@ const productValidationRules = [
   check('sku').notEmpty().withMessage('SKU is required')
 ];
 
-// Rutas con autenticación
 router.get('/', isAuthenticated, productsController.getAllProducts);
 router.post('/', isAuthenticated, productValidationRules, (req, res, next) => {
   const errors = validationResult(req);

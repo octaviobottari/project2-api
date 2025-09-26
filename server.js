@@ -11,7 +11,7 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware para verificar autenticación
+// Middleware 
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();

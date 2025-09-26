@@ -17,7 +17,7 @@ router.get('/logout', (req, res, next) => {
     if (err) return res.status(500).json({ error: 'Logout failed' });
     req.session.destroy((err) => {
       if (err) return res.status(500).json({ error: 'Session destruction failed' });
-      res.clearCookie('connect.sid'); // Limpia la cookie de sesión
+      res.clearCookie('connect.sid'); 
       res.redirect('/');
     });
   });

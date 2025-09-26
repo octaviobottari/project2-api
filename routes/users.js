@@ -3,7 +3,6 @@ const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const usersController = require('../controllers/users');
 
-// Middleware para verificar autenticación
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
@@ -11,7 +10,6 @@ const isAuthenticated = (req, res, next) => {
   res.status(401).json({ error: 'Unauthorized: Please log in' });
 };
 
-// Validaciones para POST y PUT
 const userValidationRules = [
   check('name').notEmpty().withMessage('Name is required'),
   check('email').isEmail().withMessage('Valid email is required'),
@@ -19,7 +17,6 @@ const userValidationRules = [
   check('role').optional().isIn(['user', 'admin']).withMessage('Role must be user or admin')
 ];
 
-// Rutas con autenticación
 router.get('/', isAuthenticated, usersController.getAllUsers);
 router.post('/', isAuthenticated, userValidationRules, (req, res, next) => {
   const errors = validationResult(req);
