@@ -1,29 +1,26 @@
-const router = require('express').Router();
+const express = require('express');
+const mongoose = require('mongoose');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+const userRoutes = require('./routes/userRoutes');
+const bookRoutes = require('./routes/bookRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
-router.get('/', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.send(`Logged in as ${req.user.name}`);
-  } else {
-    res.send('Not logged in');
-  }
-});
+const app = express();
+app.use(express.json());
 
-router.get('/login', (req, res) => {
-  res.redirect('/auth/github');
-});
+// MongoDB Connection
+mongoose.connect(process.env.DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-router.get('/logout', (req, res, next) => {
-  req.logout((err) => {
-    if (err) return res.status(500).json({ error: 'Logout failed' });
-    req.session.destroy((err) => {
-      if (err) return res.status(500).json({ error: 'Session destruction failed' });
-      res.clearCookie('connect.sid'); 
-      res.redirect('/');
-    });
-  });
-});
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-router.use('/users', require('./users'));
-router.use('/products', require('./products'));
+// Routes
+app.use('/users', userRoutes);
+app.use('/books', bookRoutes);
+app.use('/reviews', reviewRoutes);
 
-module.exports = router;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
