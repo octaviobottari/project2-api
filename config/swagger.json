@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://cse-341-project1-qz6j.onrender.com/"
+      "url": "https://cse-341-project1-qz6j.onrender.com"
     }
   ],
   "paths": {
@@ -273,7 +273,7 @@
   "components": {
     "securitySchemes": {
       "bearerAuth": {
-        "type": "https",
+        "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }

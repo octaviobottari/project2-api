@@ -8,9 +8,9 @@ const express = require('express');
      const authMiddleware = require('./middleware/auth');
      const helmet = require('helmet');
      const rateLimit = require('express-rate-limit');
-     require('dotenv').config(); // Ensure this is present
+     require('dotenv').config(); 
 
-     console.log("Loaded DB_URI:", process.env.DB_URI); // Debug line
+     console.log("Loaded DB_URI:", process.env.DB_URI);
 
      const app = express();
      app.use(express.json());
