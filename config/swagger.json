@@ -3,7 +3,7 @@
   "info": {
     "title": "BookReviewAPI",
     "version": "1.0.0",
-    "description": "API for managing a book review platform"
+    "description": "API for managing a book review platform with GitHub OAuth and JWT authentication"
   },
   "servers": [
     {
@@ -11,6 +11,31 @@
     }
   ],
   "paths": {
+    "/auth/github": {
+      "get": {
+        "summary": "Initiate GitHub OAuth login",
+        "responses": {
+          "302": { "description": "Redirects to GitHub for authentication" }
+        }
+      }
+    },
+    "/auth/github/callback": {
+      "get": {
+        "summary": "GitHub OAuth callback, returns JWT on success",
+        "responses": {
+          "302": { "description": "Redirects with JWT token in query param" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/logout": {
+      "get": {
+        "summary": "Logout and clear session/JWT",
+        "responses": {
+          "302": { "description": "Redirects to home page" }
+        }
+      }
+    },
     "/users/register": {
       "post": {
         "summary": "Register a new user",
@@ -30,7 +55,7 @@
           }
         },
         "responses": {
-          "201": { "description": "User registered successfully" },
+          "201": { "description": "User registered successfully, returns JWT" },
           "400": { "description": "Bad request" }
         }
       }
@@ -276,6 +301,18 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://github.com/login/oauth/authorize",
+            "tokenUrl": "https://github.com/login/oauth/access_token",
+            "scopes": {
+              "user:email": "Access to user's email"
+            }
+          }
+        }
       }
     }
   },
