@@ -4,8 +4,16 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const authMiddleware = require('../middleware/auth');
+const { body, param, validationResult } = require('express-validator');
 
-router.post('/register', async (req, res) => {
+router.post('/register', [
+  body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
   try {
     const { username, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -14,11 +22,20 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign({ id: user._id, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(201).json({ token });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
     res.status(400).json({ error: error.message });
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', [
+  body('username').trim().notEmpty().withMessage('Username is required'),
+  body('password').notEmpty().withMessage('Password is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
@@ -33,9 +50,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, [
+  param('id').isMongoId().withMessage('Invalid user ID')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (error) {
@@ -43,18 +65,33 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, [
+  param('id').isMongoId().withMessage('Invalid user ID'),
+  body('username').optional().trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+  body('email').optional().isEmail().withMessage('Valid email is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
   try {
     const { username, email } = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, { username, email }, { new: true });
+    const user = await User.findByIdAndUpdate(req.params.id, { username, email }, { new: true }).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
     res.status(400).json({ error: error.message });
   }
 });
 
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, [
+  param('id').isMongoId().withMessage('Invalid user ID')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
