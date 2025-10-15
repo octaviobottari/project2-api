@@ -2,6 +2,12 @@ const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const User = require('../models/user');
 
+// Validate environment variables
+if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+  console.error('Error: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set in .env file');
+  process.exit(1);
+}
+
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,

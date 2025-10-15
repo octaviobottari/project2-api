@@ -251,6 +251,7 @@
               }
             }
           },
+          "401": { "description": "Unauthorized - authentication required" },
           "404": { "description": "User not found" }
         }
       },
@@ -291,7 +292,9 @@
               }
             }
           },
-          "404": { "description": "User not found" }
+          "401": { "description": "Unauthorized - authentication required" },
+          "404": { "description": "User not found" },
+          "409": { "description": "Conflict - username or email already exists" }
         }
       },
       "delete": {
@@ -308,6 +311,7 @@
         ],
         "responses": {
           "200": { "description": "User deleted" },
+          "401": { "description": "Unauthorized - authentication required" },
           "404": { "description": "User not found" }
         }
       }
@@ -353,7 +357,8 @@
               }
             }
           },
-          "400": { "description": "Bad request" }
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" }
         }
       },
       "get": {
@@ -380,7 +385,8 @@
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Bad request" }
         }
       }
     },
@@ -407,6 +413,7 @@
               }
             }
           },
+          "400": { "description": "Bad request" },
           "404": { "description": "Book not found" }
         }
       },
@@ -448,6 +455,8 @@
               }
             }
           },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
           "404": { "description": "Book not found" }
         }
       },
@@ -465,6 +474,8 @@
         ],
         "responses": {
           "200": { "description": "Book deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
           "404": { "description": "Book not found" }
         }
       }
@@ -513,7 +524,8 @@
               }
             }
           },
-          "400": { "description": "Bad request" }
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" }
         }
       },
       "get": {
@@ -540,7 +552,8 @@
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Bad request" }
         }
       }
     },
@@ -567,6 +580,7 @@
               }
             }
           },
+          "400": { "description": "Bad request" },
           "404": { "description": "Review not found" }
         }
       },
@@ -611,7 +625,9 @@
               }
             }
           },
-          "404": { "description": "Review not found" }
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
+          "404": { "description": "Review not found or unauthorized" }
         }
       },
       "delete": {
@@ -628,7 +644,198 @@
         ],
         "responses": {
           "200": { "description": "Review deleted" },
-          "404": { "description": "Review not found" }
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
+          "404": { "description": "Review not found or unauthorized" }
+        }
+      }
+    },
+    "/authors": {
+      "post": {
+        "summary": "Create an author",
+        "description": "Add a new author to the catalog (requires authentication)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["firstName", "lastName", "birthDate", "nationality", "biography"],
+                "properties": {
+                  "firstName": { 
+                    "type": "string",
+                    "example": "John"
+                  },
+                  "lastName": { 
+                    "type": "string",
+                    "example": "Doe"
+                  },
+                  "birthDate": { 
+                    "type": "string",
+                    "format": "date",
+                    "example": "1970-01-01"
+                  },
+                  "nationality": { 
+                    "type": "string",
+                    "example": "American"
+                  },
+                  "biography": { 
+                    "type": "string",
+                    "example": "Author biography"
+                  },
+                  "website": { 
+                    "type": "string",
+                    "example": "http://example.com"
+                  },
+                  "awards": { 
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["Pulitzer"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { 
+            "description": "Author created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Author"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" }
+        }
+      },
+      "get": {
+        "summary": "List all authors",
+        "description": "Retrieve all authors with optional nationality filtering",
+        "parameters": [
+          { 
+            "name": "nationality", 
+            "in": "query", 
+            "schema": { "type": "string" },
+            "description": "Filter by nationality"
+          }
+        ],
+        "responses": {
+          "200": { 
+            "description": "List of authors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Author"
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/authors/{id}": {
+      "get": {
+        "summary": "Get author by ID",
+        "description": "Retrieve detailed information about a specific author",
+        "parameters": [
+          { 
+            "name": "id", 
+            "in": "path", 
+            "required": true, 
+            "schema": { "type": "string" } 
+          }
+        ],
+        "responses": {
+          "200": { 
+            "description": "Author details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Author"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "404": { "description": "Author not found" }
+        }
+      },
+      "put": {
+        "summary": "Update author",
+        "description": "Update author information (requires authentication)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { 
+            "name": "id", 
+            "in": "path", 
+            "required": true, 
+            "schema": { "type": "string" } 
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "birthDate": { "type": "string", "format": "date" },
+                  "nationality": { "type": "string" },
+                  "biography": { "type": "string" },
+                  "website": { "type": "string" },
+                  "awards": { 
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { 
+            "description": "Author updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Author"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
+          "404": { "description": "Author not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete author",
+        "description": "Remove an author from the catalog (requires authentication)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { 
+            "name": "id", 
+            "in": "path", 
+            "required": true, 
+            "schema": { "type": "string" } 
+          }
+        ],
+        "responses": {
+          "200": { "description": "Author deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized - authentication required" },
+          "404": { "description": "Author not found" }
         }
       }
     }
@@ -672,6 +879,23 @@
           "userId": { "type": "string" },
           "rating": { "type": "number" },
           "comment": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Author": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "birthDate": { "type": "string", "format": "date" },
+          "nationality": { "type": "string" },
+          "biography": { "type": "string" },
+          "website": { "type": "string" },
+          "awards": { 
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       }

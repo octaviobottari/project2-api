@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "jest --forceExit"
   },
   "keywords": [],
   "author": "",
@@ -24,13 +23,14 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
-    "mongoose": "^8.19.0",
+    "mongoose": "^8.19.1",
     "passport": "^0.7.0",
     "passport-github": "^1.1.0",
     "passport-github2": "^0.1.12",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@shelf/jest-mongodb": "^5.2.2",
     "chai": "^6.2.0",
     "jest": "^30.2.0",
     "mocha": "^11.7.4",

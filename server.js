@@ -5,6 +5,7 @@ const swaggerDocument = require('./config/swagger.json');
 const userRoutes = require('./routes/userRoutes');
 const bookRoutes = require('./routes/bookRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const authorRoutes = require('./routes/authorRoutes'); // Add this line
 const authMiddleware = require('./middleware/auth');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -138,6 +139,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/users', userRoutes);
 app.use('/books', bookRoutes);
 app.use('/reviews', reviewRoutes);
+app.use('/authors', authorRoutes); // Add this line
 
 // Error handling middleware
 app.use((err, req, res, next) => {
